@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Anti-Scroller</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300;1,9..40,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #1f5c3a;
+    --green-light: #e8f0eb;
+    --white: #ffffff;
+    --off-white: #f4f6f4;
+    --black: #0d0d0d;
+    --mid: #5a6b60;
+    --faint: #9aada0;
+    --rule: #cdd9d1;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--off-white);
+    color: var(--black);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── MASTHEAD ── */
+  .masthead {
+    background: var(--green);
+    padding: 20px 48px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .masthead-left {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .masthead-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 52px;
+    font-weight: 400;
+    letter-spacing: 2px;
+    line-height: 1;
+    color: var(--white);
+  }
+
+  .masthead-title span {
+    color: rgba(255,255,255,0.4);
+    margin-right: 6px;
+  }
+
+  .masthead-subtitle {
+    font-size: 10px;
+    font-weight: 300;
+    color: rgba(255,255,255,0.42);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+
+  .masthead-meta {
+    text-align: right;
+    font-size: 11px;
+    color: rgba(255,255,255,0.6);
+    line-height: 1.9;
+    font-weight: 300;
+    letter-spacing: 0.02em;
+  }
+
+  .masthead-meta .dateline {
+    color: rgba(255,255,255,0.9);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 10px;
+  }
+
+  .live-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: #6fcf97;
+    border-radius: 50%;
+    margin-right: 5px;
+    animation: pulse 2s infinite;
+    vertical-align: middle;
+    position: relative;
+    top: -1px;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* ── PAGE ── */
+  .page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 40px 80px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── SECTION ── */
+  .section {
+    background: var(--white);
+    margin-bottom: 20px;
+    border: 1px solid var(--rule);
+    animation: fadeUp 0.4s ease both;
+  }
+
+  .section:nth-child(1) { animation-delay: 0.05s; }
+  .section:nth-child(2) { animation-delay: 0.12s; }
+  .section:nth-child(3) { animation-delay: 0.19s; }
+  .section:nth-child(4) { animation-delay: 0.26s; }
+  .section:nth-child(5) { animation-delay: 0.33s; }
+  .section:nth-child(6) { animation-delay: 0.40s; }
+  .section:nth-child(7) { animation-delay: 0.47s; }
+  .section:nth-child(8) { animation-delay: 0.54s; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── SECTION HEADER ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    background: var(--green);
+    height: 44px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    font-weight: 400;
+    letter-spacing: 2.5px;
+    color: var(--white);
+  }
+
+  .section-count {
+    font-size: 10px;
+    color: rgba(255,255,255,0.55);
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-left: auto;
+  }
+
+  .section-toggle {
+    margin-left: 14px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.45);
+    transition: transform 0.25s ease;
+    flex-shrink: 0;
+  }
+
+  .section.collapsed .section-toggle {
+    transform: rotate(-90deg);
+  }
+
+  .section.collapsed .stories-wrap {
+    display: none;
+  }
+
+  /* ── STORIES ROW ── */
+  .stories-wrap { position: relative; }
+
+  .stories-wrap::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 80px;
+    height: 100%;
+    background: linear-gradient(to right, transparent, var(--white));
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  .stories-wrap.scrolled-end::after { opacity: 0; }
+
+  .scroll-hint {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 16px;
+    color: var(--faint);
+    pointer-events: none;
+    animation: nudge 1.8s ease-in-out infinite;
+    z-index: 2;
+  }
+
+  @keyframes nudge {
+    0%, 100% { transform: translateY(-50%) translateX(0); }
+    50% { transform: translateY(-50%) translateX(4px); }
+  }
+
+  .stories-row {
+    display: flex;
+    flex-direction: row;
+    padding: 0 24px 0 32px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .stories-row::-webkit-scrollbar { display: none; }
+
+  .col-rule {
+    background: var(--rule);
+    width: 1px;
+    flex-shrink: 0;
+    align-self: stretch;
+    margin: 0 24px;
+  }
+
+  /* ── STORY CARD ── */
+  .story {
+    min-width: 260px;
+    max-width: 260px;
+    scroll-snap-align: start;
+    flex-shrink: 0;
+    padding: 20px 4px;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+
+  .story:hover .story-headline { color: var(--green); }
+
+  .story-source {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .new-badge {
+    background: var(--green);
+    color: white;
+    font-size: 8px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    padding: 2px 6px;
+    text-transform: uppercase;
+  }
+
+  .story-headline {
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.4;
+    margin-bottom: 8px;
+    transition: color 0.15s;
+    color: var(--black);
+    letter-spacing: -0.01em;
+  }
+
+  .story-deck {
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: var(--mid);
+    font-weight: 300;
+  }
+
+  .story-time {
+    font-size: 10px;
+    color: var(--faint);
+    margin-top: 10px;
+    font-weight: 400;
+  }
+
+  /* ── ALBUM CARD ── */
+  .album-card {
+    min-width: 240px;
+    max-width: 240px;
+    scroll-snap-align: start;
+    flex-shrink: 0;
+    padding: 20px 4px;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .album-card:hover .album-artist { color: var(--green); }
+
+  .album-source {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--faint);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 3px;
+  }
+
+  .album-art {
+    width: 64px;
+    height: 64px;
+    background: var(--green-light);
+    border: 1px solid var(--rule);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    margin-bottom: 6px;
+    overflow: hidden;
+  }
+
+  .album-art img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .album-artist {
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    transition: color 0.15s;
+    color: var(--black);
+  }
+
+  .album-title-text {
+    font-size: 13.5px;
+    font-weight: 300;
+    font-style: italic;
+    color: var(--mid);
+  }
+
+  .album-score {
+    display: inline-block;
+    background: var(--green);
+    color: var(--white);
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 8px;
+    letter-spacing: 0.08em;
+    margin-top: 2px;
+  }
+
+  .album-blurb {
+    font-size: 12px;
+    color: var(--mid);
+    font-weight: 300;
+    line-height: 1.55;
+    margin-top: 2px;
+  }
+
+  /* ── LOADING / ERROR ── */
+  .loading-row {
+    padding: 28px 32px;
+    font-size: 12px;
+    color: var(--faint);
+    font-weight: 300;
+    letter-spacing: 0.04em;
+  }
+
+  .error-row {
+    padding: 28px 32px;
+    font-size: 12px;
+    color: #b94040;
+    font-weight: 300;
+  }
+
+  /* ── ADD FEED ── */
+  .add-feed-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--white);
+    border: 1px solid var(--rule);
+    padding: 0 16px 0 20px;
+    height: 46px;
+    margin-bottom: 20px;
+  }
+
+  .add-feed-label {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--faint);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .add-feed-divider {
+    width: 1px;
+    height: 20px;
+    background: var(--rule);
+    flex-shrink: 0;
+  }
+
+  .add-feed-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12.5px;
+    font-weight: 300;
+    color: var(--black);
+    background: transparent;
+    min-width: 0;
+  }
+
+  .add-feed-input::placeholder { color: var(--faint); }
+
+  .add-feed-select {
+    border: 1px solid var(--rule);
+    background: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--mid);
+    padding: 5px 6px;
+    outline: none;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+
+  .add-feed-btn {
+    background: var(--green);
+    color: var(--white);
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 7px 16px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    flex-shrink: 0;
+  }
+
+  .add-feed-btn:hover  { opacity: 0.82; }
+  .add-feed-btn:disabled { opacity: 0.4; cursor: default; }
+
+  .add-feed-status {
+    font-size: 10.5px;
+    font-weight: 300;
+    white-space: nowrap;
+    color: var(--faint);
+    min-width: 90px;
+    text-align: right;
+  }
+
+  /* ── FOOTER ── */
+  .footer {
+    text-align: center;
+    font-size: 11px;
+    color: var(--faint);
+    font-weight: 300;
+    padding-top: 8px;
+    letter-spacing: 0.03em;
+  }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-left">
+    <div class="masthead-title"><span>The</span> Anti-Scroller</div>
+    <div class="masthead-subtitle">Your Digest of the Web</div>
+  </div>
+  <div class="masthead-meta">
+    <div class="dateline" id="dateline"></div>
+    <div><span class="live-dot"></span>Updating continuously</div>
+    <div id="item-count" style="color:rgba(255,255,255,0.4); font-size:11px;">Loading sources…</div>
+  </div>
+</header>
+
+<main class="page">
+
+  <!-- ADD FEED -->
+  <div class="add-feed-bar">
+    <span class="add-feed-label">Add Feed</span>
+    <div class="add-feed-divider"></div>
+    <input class="add-feed-input" id="add-url" type="url" placeholder="Paste an RSS feed URL…" autocomplete="off" spellcheck="false">
+    <select class="add-feed-select" id="add-section">
+      <option value="news">News</option>
+      <option value="youtube">Video</option>
+      <option value="music">Music</option>
+      <option value="podcasts">Podcasts</option>
+      <option value="food">Dining</option>
+      <option value="books">Books</option>
+      <option value="movies">Movies</option>
+      <option value="clothes">Clothes</option>
+    </select>
+    <button class="add-feed-btn" id="add-btn">Add</button>
+    <span class="add-feed-status" id="add-status"></span>
+  </div>
+
+  <!-- NEWS -->
+  <section class="section">
+    <div class="section-header">
+      <span class="section-title">News</span>
+      <span class="section-count" id="news-count">News Items</span>
+      <span class="section-toggle">▾</span>
+    </div>
+    <div class="stories-wrap" id="news-wrap">
+      <div class="stories-row" id="news-row">
+        <div class="loading-row">Fetching latest stories…</div>
+      </div>
+      <div class="scroll-hint" id="news-hint">→</div>
+    </div>
+  </section>
+
+  <!-- YOUTUBE -->
+  <section class="section">
+    <div class="section-header">
+      <span class="section-title">Video</span>
+      <span class="section-count" id="youtube-count">Breaking Points</span>
+      <span class="section-toggle">▾</span>
+    </div>
+    <div class="stories-wrap" id="youtube-wrap">
+      <div class="stories-row" id="youtube-row">
+        <div class="loading-row">Fetching latest videos…</div>
+      </div>
+      <div class="scroll-hint" id="youtube-hint">→</div>
+    </div>
+  </section>
+
+  <!-- MUSIC -->
+  <section class="section">
+    <div class="section-header">
+      <span class="section-title">Music</span>
+      <span class="section-count" id="music-count">Stereogum</span>
+      <span class="section-toggle">▾</span>
+    </div>
+    <div class="stories-wrap" id="music-wrap">
+      <div class="stories-row" id="music-row">
+        <div class="loading-row">Fetching latest stories…</div>
+      </div>
+      <div class="scroll-hint" id="music-hint">→</div>
+    </div>
+  </section>
+
+  <!-- PODCASTS -->
+  <section class="section">
+    <div class="section-header">
+      <span class="section-title">Podcasts</span>
+      <span class="section-count" id="podcasts-count">NPR Up First</span>
+      <span class="section-toggle">▾</span>
+    </div>
+    <div class="stories-wrap" id="podcasts-wrap">
+      <div class="stories-row" id="podcasts-row">
+        <div class="loading-row">Fetching latest episodes…</div>
+      </div>
+      <div class="scroll-hint" id="podcasts-hint">→</div>
+    </div>
+  </section>
+
+  <!-- FOOD -->
+  <section class="section">
+    <div class="section-header">
+      <span class="section-title">Dining</span>
+      <span class="section-count" id="food-count">Eater NY · Grub Street</span>
+      <span class="section-toggle">▾</span>
+    </div>
+    <div class="stories-wrap" id="food-wrap">
+      <div class="stories-row" id="food-row">
+        <div class="loading-row">Fetching latest stories…</div>
+      </div>
+      <div class="scroll-hint" id="food-hint">→</div>
+    </div>
+  </section>
+
+  <!-- BOOKS -->
+  <section class="section">
+    <div class="section-header">
+      <span class="section-title">Books</span>
+      <span class="section-count" id="books-count">Literary Hub · Book Riot</span>
+      <span class="section-toggle">▾</span>
+    </div>
+    <div class="stories-wrap" id="books-wrap">
+      <div class="stories-row" id="books-row">
+        <div class="loading-row">Fetching latest stories…</div>
+      </div>
+      <div class="scroll-hint" id="books-hint">→</div>
+    </div>
+  </section>
+
+  <!-- MOVIES -->
+  <section class="section">
+    <div class="section-header">
+      <span class="section-title">Movies</span>
+      <span class="section-count" id="movies-count">Deadline · IndieWire</span>
+      <span class="section-toggle">▾</span>
+    </div>
+    <div class="stories-wrap" id="movies-wrap">
+      <div class="stories-row" id="movies-row">
+        <div class="loading-row">Fetching latest stories…</div>
+      </div>
+      <div class="scroll-hint" id="movies-hint">→</div>
+    </div>
+  </section>
+
+  <!-- CLOTHES -->
+  <section class="section">
+    <div class="section-header">
+      <span class="section-title">Clothes</span>
+      <span class="section-count" id="clothes-count">Blackbird Spyplane · Jake Woolf</span>
+      <span class="section-toggle">▾</span>
+    </div>
+    <div class="stories-wrap" id="clothes-wrap">
+      <div class="stories-row" id="clothes-row">
+        <div class="loading-row">Fetching latest stories…</div>
+      </div>
+      <div class="scroll-hint" id="clothes-hint">→</div>
+    </div>
+  </section>
+
+  <div class="footer" id="footer">—</div>
+
+</main>
+
+<script>
+  // ── CONFIG: your RSS sources ──────────────────────────────────────────────
+  const SOURCES = {
+    news: [
+      { label: 'News Items', url: 'https://substack.news-items.com/feed' }
+    ],
+    clothes: [
+      { label: 'Blackbird Spyplane', url: 'https://www.blackbirdspyplane.com/feed' },
+      { label: 'Jake Woolf',         url: 'https://jakewoolf.substack.com/feed'   }
+    ],
+    music: [
+      { label: 'Stereogum', url: 'https://www.stereogum.com/feed/' }
+    ],
+    youtube: [
+      { label: 'Breaking Points', url: 'https://www.youtube.com/feeds/videos.xml?channel_id=UCDRIjKy6eZOvKtOELtTdeUA' }
+    ],
+    movies: [
+      { label: 'Deadline',  url: 'https://deadline.com/feed/'      },
+      { label: 'IndieWire', url: 'https://www.indiewire.com/feed/' }
+    ],
+    podcasts: [
+      { label: 'NPR Up First', url: 'https://feeds.npr.org/510318/podcast.xml' }
+    ],
+    books: [
+      { label: 'Literary Hub',  url: 'https://lithub.com/feed/'       },
+      { label: 'Book Riot',     url: 'https://bookriot.com/feed/'     }
+    ],
+    food: [
+      { label: 'Eater NY',    url: 'https://ny.eater.com/rss/index.xml'                        },
+      { label: 'Grub Street', url: 'https://feeds.feedburner.com/nymag/grubstreet' }
+    ]
+  };
+
+  // Proxies: tried in sequence until one returns items
+  const RSS2JSON   = 'https://api.rss2json.com/v1/api.json?count=20&rss_url=';
+  const ALLORIGINS = 'https://api.allorigins.win/get?url=';
+  const CORSPROXY  = 'https://corsproxy.io/?';
+
+  // ── HELPERS ──────────────────────────────────────────────────────────────
+
+  function timeAgo(dateStr) {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins  = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days  = Math.floor(diff / 86400000);
+    if (mins < 60)  return `${mins} min ago`;
+    if (hours < 24) return `${hours} hr ago`;
+    if (days === 1) return 'Yesterday';
+    return `${days} days ago`;
+  }
+
+  function isNew(dateStr) {
+    return (Date.now() - new Date(dateStr).getTime()) < 3 * 3600000;
+  }
+
+  function stripHtml(html) {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    return tmp.textContent || '';
+  }
+
+  function truncate(str, n) {
+    str = str.trim();
+    return str.length > n ? str.slice(0, n).trim() + '…' : str;
+  }
+
+  // Parse raw RSS XML into our item format (used as fallback)
+  function parseXml(xmlStr, label) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xmlStr, 'text/xml');
+
+    // Support both RSS <item> and Atom <entry>
+    const items = Array.from(doc.getElementsByTagName('item'));
+    const entries = Array.from(doc.getElementsByTagName('entry'));
+    const nodes = items.length ? items : entries;
+
+    console.log(`[parseXml] ${label}: found ${nodes.length} nodes in feed`);
+
+    return nodes.map(node => {
+      // Helper that works across namespaces
+      const get = tag => {
+        const els = node.getElementsByTagName(tag);
+        return els[0]?.textContent?.trim() || '';
+      };
+
+      // Thumbnail: try media:thumbnail, media:content, then itunes:image
+      const mediaNs = node.getElementsByTagNameNS('http://search.yahoo.com/mrss/', 'thumbnail')[0]
+                   || node.getElementsByTagNameNS('http://search.yahoo.com/mrss/', 'content')[0];
+      const thumb = mediaNs?.getAttribute('url') || null;
+
+      // Link: RSS <link> is tricky — it's often a text node, not element content
+      let link = '';
+      const linkEls = node.getElementsByTagName('link');
+      if (linkEls[0]) {
+        // Atom uses href attribute; RSS uses text content
+        link = linkEls[0].getAttribute('href') || linkEls[0].textContent?.trim() || '';
+      }
+      if (!link) link = get('guid') || get('id') || '';
+
+      // Summary: try description, summary, content:encoded
+      const summaryRaw = get('description') || get('summary') ||
+        node.getElementsByTagNameNS('http://purl.org/rss/1.0/modules/content/', 'encoded')[0]?.textContent || '';
+
+      return {
+        label,
+        title:   get('title') || '(no title)',
+        link,
+        date:    get('pubDate') || get('published') || get('updated') || '',
+        summary: truncate(stripHtml(summaryRaw), 160),
+        thumb
+      };
+    });
+  }
+
+  async function fetchViaRss2Json(source) {
+    const res = await fetch(RSS2JSON + encodeURIComponent(source.url));
+    const data = await res.json();
+    // Treat empty items as failure so the next proxy is tried
+    if (data.status !== 'ok' || !data.items?.length) throw new Error('rss2json: no items');
+    return data.items.map(item => ({
+      label:   source.label,
+      title:   item.title,
+      link:    item.link,
+      date:    item.pubDate,
+      summary: truncate(stripHtml(item.description || item.content || ''), 160),
+      thumb:   item.thumbnail || item.enclosure?.link || null
+    }));
+  }
+
+  async function fetchViaAllOrigins(source) {
+    const res = await fetch(ALLORIGINS + encodeURIComponent(source.url));
+    const data = await res.json();
+    if (!data.contents) throw new Error('allorigins: no contents');
+    const items = parseXml(data.contents, source.label);
+    if (!items.length) throw new Error('allorigins: 0 items parsed');
+    return items;
+  }
+
+  async function fetchViaCorsproxy(source) {
+    const res = await fetch(CORSPROXY + encodeURIComponent(source.url));
+    if (!res.ok) throw new Error(`corsproxy: ${res.status}`);
+    const text = await res.text();
+    const items = parseXml(text, source.label);
+    if (!items.length) throw new Error('corsproxy: 0 items parsed');
+    return items;
+  }
+
+  async function fetchFeed(source) {
+    for (const method of [fetchViaRss2Json, fetchViaAllOrigins, fetchViaCorsproxy]) {
+      try {
+        return await method(source);
+      } catch (e) {
+        console.warn(`[${source.label}] ${method.name}: ${e.message}`);
+      }
+    }
+    throw new Error(`All proxies failed for ${source.label}`);
+  }
+
+  // ── RENDER: standard story card ──────────────────────────────────────────
+
+  function renderStory(item) {
+    const badge = isNew(item.date) ? '<span class="new-badge">New</span>' : '';
+    return `
+      <a class="story" href="${item.link}" target="_blank" rel="noopener">
+        <div class="story-source">${item.label} ${badge}</div>
+        <div class="story-headline">${item.title}</div>
+        <div class="story-deck">${item.summary}</div>
+        <div class="story-time">${timeAgo(item.date)}</div>
+      </a>`;
+  }
+
+  // ── RENDER: Pitchfork album card ─────────────────────────────────────────
+
+  function renderAlbum(item) {
+    // Pitchfork titles are usually "Artist: Album Title"
+    const parts  = item.title.split(':');
+    const artist = parts[0].trim();
+    const album  = parts.slice(1).join(':').trim() || item.title;
+    const badge  = isNew(item.date) ? '<span class="new-badge">New</span>' : '';
+
+    // Try to pull score from summary text (e.g. "8.5")
+    const scoreMatch = item.summary.match(/\b([0-9]\.[0-9]|10\.0)\b/);
+    const score = scoreMatch ? `<div class="album-score">${scoreMatch[1]}</div>` : '';
+
+    const art = item.thumb
+      ? `<img src="${item.thumb}" alt="" loading="lazy">`
+      : '🎵';
+
+    return `
+      <a class="album-card" href="${item.link}" target="_blank" rel="noopener">
+        <div class="album-source">${item.label} ${badge}</div>
+        <div class="album-art">${art}</div>
+        <div class="album-artist">${artist}</div>
+        <div class="album-title-text">${album}</div>
+        ${score}
+        <div class="album-blurb">${item.summary}</div>
+      </a>`;
+  }
+
+  // ── BUILD ROW with dividers ───────────────────────────────────────────────
+
+  function buildRow(items, renderFn) {
+    return items.map((item, i) =>
+      (i > 0 ? '<div class="col-rule"></div>' : '') + renderFn(item)
+    ).join('');
+  }
+
+  // ── SCROLL HINT LOGIC ─────────────────────────────────────────────────────
+
+  function setupScroll(rowId, wrapId, hintId) {
+    const row  = document.getElementById(rowId);
+    const wrap = document.getElementById(wrapId);
+    const hint = document.getElementById(hintId);
+    if (!row) return;
+    row.addEventListener('scroll', () => {
+      const atEnd = row.scrollLeft + row.clientWidth >= row.scrollWidth - 8;
+      wrap.classList.toggle('scrolled-end', atEnd);
+      if (hint) hint.style.display = atEnd ? 'none' : '';
+    });
+    // Hide hint if no overflow
+    setTimeout(() => {
+      if (row.scrollWidth <= row.clientWidth) {
+        if (hint) hint.style.display = 'none';
+        wrap.classList.add('scrolled-end');
+      }
+    }, 200);
+  }
+
+  // ── DATELINE ──────────────────────────────────────────────────────────────
+
+  const dateEl = document.getElementById('dateline');
+  dateEl.textContent = new Date().toLocaleDateString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+  });
+
+  // ── LOAD ALL SECTIONS ─────────────────────────────────────────────────────
+
+  async function loadSection({ sources, rowId, wrapId, hintId, countId, renderFn, interleave = false }) {
+    const row = document.getElementById(rowId);
+    try {
+      const results = await Promise.all(sources.map(fetchFeed));
+
+      let items;
+      if (interleave) {
+        // Interleave items from multiple sources so no source dominates
+        const maxLen = Math.max(...results.map(r => r.length));
+        items = [];
+        for (let i = 0; i < maxLen; i++) {
+          results.forEach(r => { if (r[i]) items.push(r[i]); });
+        }
+      } else {
+        items = results.flat();
+        items.sort((a, b) => new Date(b.date) - new Date(a.date));
+      }
+
+      if (!items.length) {
+        row.innerHTML = '<div class="error-row">No items found.</div>';
+        return;
+      }
+
+      row.innerHTML = buildRow(items, renderFn);
+
+      const countEl = document.getElementById(countId);
+      if (countEl) countEl.textContent = `${sources.map(s => s.label).join(' · ')} · ${items.length} items`;
+
+      setupScroll(rowId, wrapId, hintId);
+    } catch (e) {
+      row.innerHTML = `<div class="error-row">Couldn't load feed — check your connection or try again shortly.</div>`;
+      const hint = document.getElementById(hintId);
+      if (hint) hint.style.display = 'none';
+    }
+  }
+
+  async function loadAll() {
+    await Promise.all([
+      loadSection({
+        sources:   SOURCES.news,
+        rowId:     'news-row',
+        wrapId:    'news-wrap',
+        hintId:    'news-hint',
+        countId:   'news-count',
+        renderFn:  renderStory
+      }),
+      loadSection({
+        sources:   SOURCES.music,
+        rowId:     'music-row',
+        wrapId:    'music-wrap',
+        hintId:    'music-hint',
+        countId:   'music-count',
+        renderFn:  renderStory
+      }),
+      loadSection({
+        sources:   SOURCES.youtube,
+        rowId:     'youtube-row',
+        wrapId:    'youtube-wrap',
+        hintId:    'youtube-hint',
+        countId:   'youtube-count',
+        renderFn:  renderStory
+      }),
+      loadSection({
+        sources:   SOURCES.podcasts,
+        rowId:     'podcasts-row',
+        wrapId:    'podcasts-wrap',
+        hintId:    'podcasts-hint',
+        countId:   'podcasts-count',
+        renderFn:  renderStory
+      }),
+      loadSection({
+        sources:   SOURCES.food,
+        rowId:     'food-row',
+        wrapId:    'food-wrap',
+        hintId:    'food-hint',
+        countId:   'food-count',
+        renderFn:  renderStory,
+        interleave: true
+      }),
+      loadSection({
+        sources:   SOURCES.books,
+        rowId:     'books-row',
+        wrapId:    'books-wrap',
+        hintId:    'books-hint',
+        countId:   'books-count',
+        renderFn:  renderStory,
+        interleave: true
+      }),
+      loadSection({
+        sources:   SOURCES.movies,
+        rowId:     'movies-row',
+        wrapId:    'movies-wrap',
+        hintId:    'movies-hint',
+        countId:   'movies-count',
+        renderFn:  renderStory,
+        interleave: true
+      }),
+      loadSection({
+        sources:   SOURCES.clothes,
+        rowId:     'clothes-row',
+        wrapId:    'clothes-wrap',
+        hintId:    'clothes-hint',
+        countId:   'clothes-count',
+        renderFn:  renderStory,
+        interleave: true
+      })
+    ]);
+
+    // Update total count in masthead
+    let total = 0;
+    ['news-row','youtube-row','movies-row','music-row','podcasts-row','food-row','books-row','clothes-row'].forEach(id => {
+      const row = document.getElementById(id);
+      if (row) total += row.querySelectorAll('.story, .album-card').length;
+    });
+    document.getElementById('item-count').textContent =
+      `8 sources · ${total} items today`;
+
+    // Footer last-updated
+    document.getElementById('footer').innerHTML =
+      `<span class="live-dot"></span> Last refreshed ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} · Refreshes every 30 minutes`;
+  }
+
+  // ── ADD FEED ──────────────────────────────────────────────────────────────
+
+  const SECTION_MAP = {
+    news:     { rowId: 'news-row',     wrapId: 'news-wrap',     hintId: 'news-hint'     },
+    youtube:  { rowId: 'youtube-row',  wrapId: 'youtube-wrap',  hintId: 'youtube-hint'  },
+    music:    { rowId: 'music-row',    wrapId: 'music-wrap',    hintId: 'music-hint'    },
+    podcasts: { rowId: 'podcasts-row', wrapId: 'podcasts-wrap', hintId: 'podcasts-hint' },
+    food:     { rowId: 'food-row',     wrapId: 'food-wrap',     hintId: 'food-hint'     },
+    books:    { rowId: 'books-row',    wrapId: 'books-wrap',    hintId: 'books-hint'    },
+    movies:   { rowId: 'movies-row',   wrapId: 'movies-wrap',   hintId: 'movies-hint'   },
+    clothes:  { rowId: 'clothes-row',  wrapId: 'clothes-wrap',  hintId: 'clothes-hint'  },
+  };
+
+  // ── PERSISTENCE ───────────────────────────────────────────────────────────
+
+  const STORAGE_KEY = 'digest_custom_feeds';
+
+  function getCustomFeeds() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+    catch { return []; }
+  }
+
+  function saveCustomFeed(url, label, section) {
+    const feeds = getCustomFeeds();
+    if (!feeds.some(f => f.url === url && f.section === section)) {
+      feeds.push({ url, label, section });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(feeds));
+    }
+  }
+
+  // Fetch a custom source and prepend its items to the target section row.
+  async function applyCustomFeed(source, sectionKey) {
+    const { rowId, wrapId, hintId } = SECTION_MAP[sectionKey];
+    const items = await fetchFeed(source);
+    if (!items.length) throw new Error('empty');
+    const row = document.getElementById(rowId);
+    const hasContent = !!row.querySelector('.story, .album-card');
+    const newHtml = buildRow(items, renderStory);
+    row.innerHTML = hasContent
+      ? newHtml + '<div class="col-rule"></div>' + row.innerHTML
+      : newHtml;
+    row.closest('.section').classList.remove('collapsed');
+    setupScroll(rowId, wrapId, hintId);
+    return items.length;
+  }
+
+  async function loadCustomFeeds() {
+    const feeds = getCustomFeeds();
+    await Promise.all(
+      feeds.map(f => applyCustomFeed({ url: f.url, label: f.label }, f.section).catch(() => {}))
+    );
+  }
+
+  document.getElementById('add-btn').addEventListener('click', async () => {
+    const urlInput   = document.getElementById('add-url');
+    const statusEl   = document.getElementById('add-status');
+    const btn        = document.getElementById('add-btn');
+    const sectionKey = document.getElementById('add-section').value;
+    const url = urlInput.value.trim();
+    if (!url) return;
+
+    let label;
+    try { label = new URL(url).hostname.replace(/^www\./, ''); }
+    catch { statusEl.style.color = '#b94040'; statusEl.textContent = 'Invalid URL.'; return; }
+
+    btn.disabled = true; btn.textContent = '…';
+    statusEl.style.color = 'var(--faint)'; statusEl.textContent = 'Fetching…';
+
+    try {
+      const count = await applyCustomFeed({ label, url }, sectionKey);
+      saveCustomFeed(url, label, sectionKey);
+      statusEl.style.color = 'var(--green)';
+      statusEl.textContent = `+${count} items added.`;
+      urlInput.value = '';
+      setTimeout(() => { statusEl.textContent = ''; }, 3000);
+    } catch {
+      statusEl.style.color = '#b94040';
+      statusEl.textContent = 'Couldn\'t load feed.';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Add';
+    }
+  });
+
+  document.getElementById('add-url').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('add-btn').click();
+  });
+
+  // ── SECTION TOGGLE ────────────────────────────────────────────────────────
+
+  document.querySelectorAll('.section-header').forEach(header => {
+    header.addEventListener('click', () => {
+      header.closest('.section').classList.toggle('collapsed');
+    });
+  });
+
+  // Initial load — built-in sources first, then any saved custom feeds
+  loadAll().then(loadCustomFeeds);
+
+  // Auto-refresh every 30 minutes
+  setInterval(() => loadAll().then(loadCustomFeeds), 30 * 60 * 1000);
+</script>
+</body>
+</html>
